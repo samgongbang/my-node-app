@@ -22,7 +22,7 @@ app.get("/fetch-title", async (req, res) => {
     }
 });
 
-const PORT = 4000;
+const PORT = 3000;
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
 });
