@@ -1,12 +1,20 @@
 const express = require('express');
 const axios = require('axios');
 const cors = require('cors');
+const rateLimit = require('express-rate-limit');
 
 const app = express();
 
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// Rate Limiter
+const apiLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1분
+  max: 10, // 분당 최대 10회 요청
+});
+app.use('/api/lotto', apiLimiter);
 
 // Lotto API Proxy Endpoint
 app.get('/api/lotto/:round', async (req, res) => {
