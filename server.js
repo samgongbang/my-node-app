@@ -1,7 +1,6 @@
 const express = require('express');
 const axios = require('axios');
 const cors = require('cors');
-const rateLimit = require('express-rate-limit');
 
 const app = express();
 
@@ -9,17 +8,10 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Rate Limiter
-const apiLimiter = rateLimit({
-  windowMs: 60 * 1000, // 1분
-  max: 10, // 분당 최대 10회 요청
-});
-app.use('/api/lotto', apiLimiter);
-
 // Lotto API Proxy Endpoint
 app.get('/api/lotto/:round', async (req, res) => {
   const round = req.params.round;
-  const lottoApiUrl = `https://www.dhlottery.co.kr/common.do?method=getLottoNumber&drwNo=${round}`;
+  const lottoApiUrl = https://www.dhlottery.co.kr/common.do?method=getLottoNumber&drwNo=${round};
 
   try {
     const response = await axios.get(lottoApiUrl);
@@ -33,5 +25,5 @@ app.get('/api/lotto/:round', async (req, res) => {
 // Server Start
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+  console.log(Server is running on port ${PORT});
 });
