@@ -11,7 +11,7 @@ app.use(express.json());
 // Lotto API Proxy Endpoint
 app.get('/api/lotto/:round', async (req, res) => {
   const round = req.params.round;
-  const lottoApiUrl = https://www.dhlottery.co.kr/common.do?method=getLottoNumber&drwNo=${round};
+  const lottoApiUrl = `https://www.dhlottery.co.kr/common.do?method=getLottoNumber&drwNo=${round}`;
 
   try {
     const response = await axios.get(lottoApiUrl);
