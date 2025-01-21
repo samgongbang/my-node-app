@@ -23,7 +23,7 @@ const apiLimiter = rateLimit({
 });
 
 // Lotto API Proxy Endpoint
-app.get('/api/lotto/:round', apiLimiter, async (req, res) => {
+app.get('/api/lotto/:round', apiLimiter, (req, res) => {
   const round = req.params.round;
 
   // 캐시 확인
@@ -32,23 +32,8 @@ app.get('/api/lotto/:round', apiLimiter, async (req, res) => {
     return res.json(cache.get(round));
   }
 
-  // 캐시에 없으면 API 호출
-  const lottoApiUrl = `https://www.dhlottery.co.kr/common.do?method=getLottoNumber&drwNo=${round}`;
-
-  try {
-    const response = await axios.get(lottoApiUrl);
-    const data = response.data;
-
-    // 데이터 저장 및 초기화
-    currentData = data;
-    cache.set(round, data);
-
-    console.log(`Initial data fetched and cached for round ${round}`);
-    return res.json(data);
-  } catch (error) {
-    console.error('Error fetching lotto data:', error.message);
-    return res.status(500).json({ error: 'Failed to fetch lotto data' });
-  }
+  // 캐시에 없으면 에러 반환
+  return res.status(404).json({ error: 'Data not available yet. Please wait for the next update.' });
 });
 
 // Lotto 데이터 업데이트 함수
@@ -99,17 +84,10 @@ const scheduleDataUpdate = () => {
   }, millisUntilNextSaturday9PM);
 };
 
-// 서버 시작 시 초기 데이터 불러오기
-const initializeData = async () => {
-  const round = getLatestRound();
-  console.log(`Initializing data for round ${round}`);
-  await fetchAndUpdateLottoData(round);
-};
-
-// 서버 시작 시 초기화 및 스케줄링 실행
-initializeData();
+// 서버 시작 시 스케줄링 실행
 scheduleDataUpdate();
 
+// Server Start
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
