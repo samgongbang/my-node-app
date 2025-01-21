@@ -23,7 +23,7 @@ const apiLimiter = rateLimit({
 });
 
 // Lotto API Proxy Endpoint
-app.get('/api/lotto/:round', apiLimiter, (req, res) => {
+app.get('/api/lotto/:round', apiLimiter, async (req, res) => {
   const round = req.params.round;
 
   // 캐시 확인
@@ -32,8 +32,23 @@ app.get('/api/lotto/:round', apiLimiter, (req, res) => {
     return res.json(cache.get(round));
   }
 
-  // 캐시에 없으면 에러 반환
-  return res.status(404).json({ error: 'Data not available yet. Please wait for the next update.' });
+  // 캐시에 없으면 API 호출
+  const lottoApiUrl = `https://www.dhlottery.co.kr/common.do?method=getLottoNumber&drwNo=${round}`;
+
+  try {
+    const response = await axios.get(lottoApiUrl);
+    const data = response.data;
+
+    // 데이터 저장 및 초기화
+    currentData = data;
+    cache.set(round, data);
+
+    console.log(`Initial data fetched and cached for round ${round}`);
+    return res.json(data);
+  } catch (error) {
+    console.error('Error fetching lotto data:', error.message);
+    return res.status(500).json({ error: 'Failed to fetch lotto data' });
+  }
 });
 
 // Lotto 데이터 업데이트 함수
@@ -84,11 +99,53 @@ const scheduleDataUpdate = () => {
   }, millisUntilNextSaturday9PM);
 };
 
-// 서버 시작 시 스케줄링 실행
+// 서버 시작 시 초기 데이터 불러오기
+const initializeData = async () => {
+  const round = getLatestRound();
+  console.log(`Initializing data for round ${round}`);
+  await fetchAndUpdateLottoData(round);
+};
+
+// 서버 시작 시 초기화 및 스케줄링 실행
+initializeData();
 scheduleDataUpdate();
 
-// Server Start
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
+
+/**
+ * 클라이언트 측 캐싱 로직 예제 (사용할 클라이언트 측 코드)
+ */
+
+// 클라이언트 캐싱 함수
+async function fetchLottoData(round) {
+  const cachedData = localStorage.getItem(`lotto-round-${round}`);
+  if (cachedData) {
+    console.log('Using cached data from localStorage');
+    return JSON.parse(cachedData);
+  }
+
+  try {
+    const response = await fetch(`http://localhost:3000/api/lotto/${round}`);
+    const data = await response.json();
+    localStorage.setItem(`lotto-round-${round}`, JSON.stringify(data)); // 로컬 스토리지에 저장
+    console.log('Fetched data from server and cached locally');
+    return data;
+  } catch (error) {
+    console.error('Error fetching lotto data:', error);
+  }
+}
+
+// 클라이언트에서 데이터 표시
+async function displayLottoData(round) {
+  const data = await fetchLottoData(round);
+  if (data) {
+    document.getElementById('lotto-results').innerText = JSON.stringify(data, null, 2);
+  }
+}
+
+// 호출 예제
+const latestRound = getLatestRound(); // 최신 회차 계산
+window.onload = () => displayLottoData(latestRound);
