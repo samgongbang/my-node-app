@@ -8,11 +8,13 @@
     "start": "node server.js"
   },
   "dependencies": {
+    "express-rate-limit": "^6.7.0", // 원하는 버전 지정
     "axios": "^1.7.9",
     "cheerio": "^1.0.0",
     "cors": "^2.8.5",
     "express": "^4.21.2",
     "node-cache": "^5.1.2",
     "node-fetch": "^3.3.2"
+
   }
 }
