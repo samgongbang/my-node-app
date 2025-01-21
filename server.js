@@ -5,7 +5,8 @@ const NodeCache = require('node-cache');
 const rateLimit = require('express-rate-limit');
 
 const app = express();
-const cache = new NodeCache({ stdTTL: 3600 }); // 캐시 유효 시간: 1시간
+const cache = new NodeCache({ stdTTL: 7 * 24 * 60 * 60 }); // 캐시 유효 시간: 1주일
+let currentData = null; // 현재 저장된 데이터
 
 // trust proxy 설정
 app.set('trust proxy', 1); // 첫 번째 프록시를 신뢰하도록 설정
@@ -22,7 +23,7 @@ const apiLimiter = rateLimit({
 });
 
 // Lotto API Proxy Endpoint
-app.get('/api/lotto/:round', apiLimiter, async (req, res) => {
+app.get('/api/lotto/:round', apiLimiter, (req, res) => {
   const round = req.params.round;
 
   // 캐시 확인
@@ -31,22 +32,60 @@ app.get('/api/lotto/:round', apiLimiter, async (req, res) => {
     return res.json(cache.get(round));
   }
 
+  // 캐시에 없으면 에러 반환
+  return res.status(404).json({ error: 'Data not available yet. Please wait for the next update.' });
+});
+
+// Lotto 데이터 업데이트 함수
+const fetchAndUpdateLottoData = async (round) => {
   const lottoApiUrl = `https://www.dhlottery.co.kr/common.do?method=getLottoNumber&drwNo=${round}`;
 
   try {
     const response = await axios.get(lottoApiUrl);
-    const data = response.data;
+    const newData = response.data;
 
-    // 캐시에 데이터 저장
-    cache.set(round, data);
-
-    console.log(`Cache set for round ${round}`);
-    res.json(data);
+    // 데이터 변경 여부 확인
+    if (!currentData || JSON.stringify(currentData) !== JSON.stringify(newData)) {
+      console.log(`Data updated for round ${round}`);
+      currentData = newData; // 현재 데이터를 업데이트
+      cache.set(round, newData); // 캐시에 데이터 저장
+    } else {
+      console.log(`No change detected for round ${round}`);
+    }
   } catch (error) {
     console.error('Error fetching lotto data:', error.message);
-    res.status(500).json({ error: 'Failed to fetch lotto data' });
   }
-});
+};
+
+// 최신 회차 계산 함수
+const getLatestRound = () => {
+  const now = new Date();
+  const baseYear = 2002; // 로또 시작 연도
+  const yearDiff = now.getFullYear() - baseYear;
+  const weekOfYear = Math.floor((now.getTime() - new Date(now.getFullYear(), 0, 1).getTime()) / (7 * 24 * 60 * 60 * 1000));
+  return yearDiff * 52 + weekOfYear;
+};
+
+// 스케줄러 설정 (매주 토요일 오후 9시에 실행)
+const scheduleDataUpdate = () => {
+  const now = new Date();
+  const millisUntilNextSaturday9PM = (() => {
+    const nextSaturday = new Date(now);
+    nextSaturday.setDate(now.getDate() + ((6 - now.getDay() + 7) % 7)); // 다음 토요일 계산
+    nextSaturday.setHours(21, 0, 0, 0); // 오후 9시 설정
+    return nextSaturday - now;
+  })();
+
+  setTimeout(() => {
+    const round = getLatestRound();
+    console.log(`Fetching lotto data for round ${round}`);
+    fetchAndUpdateLottoData(round);
+    scheduleDataUpdate(); // 다음 주 스케줄 설정
+  }, millisUntilNextSaturday9PM);
+};
+
+// 서버 시작 시 스케줄링 실행
+scheduleDataUpdate();
 
 // Server Start
 const PORT = process.env.PORT || 3000;
