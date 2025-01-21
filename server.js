@@ -114,38 +114,3 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
-
-/**
- * 클라이언트 측 캐싱 로직 예제 (사용할 클라이언트 측 코드)
- */
-
-// 클라이언트 캐싱 함수
-async function fetchLottoData(round) {
-  const cachedData = localStorage.getItem(`lotto-round-${round}`);
-  if (cachedData) {
-    console.log('Using cached data from localStorage');
-    return JSON.parse(cachedData);
-  }
-
-  try {
-    const response = await fetch(`http://localhost:3000/api/lotto/${round}`);
-    const data = await response.json();
-    localStorage.setItem(`lotto-round-${round}`, JSON.stringify(data)); // 로컬 스토리지에 저장
-    console.log('Fetched data from server and cached locally');
-    return data;
-  } catch (error) {
-    console.error('Error fetching lotto data:', error);
-  }
-}
-
-// 클라이언트에서 데이터 표시
-async function displayLottoData(round) {
-  const data = await fetchLottoData(round);
-  if (data) {
-    document.getElementById('lotto-results').innerText = JSON.stringify(data, null, 2);
-  }
-}
-
-// 호출 예제
-const latestRound = getLatestRound(); // 최신 회차 계산
-window.onload = () => displayLottoData(latestRound);
