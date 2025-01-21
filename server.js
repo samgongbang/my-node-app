@@ -7,6 +7,9 @@ const rateLimit = require('express-rate-limit');
 const app = express();
 const cache = new NodeCache({ stdTTL: 3600 }); // 캐시 유효 시간: 1시간
 
+// trust proxy 설정
+app.set('trust proxy', 1); // 첫 번째 프록시를 신뢰하도록 설정
+
 // Middleware
 app.use(cors());
 app.use(express.json());
