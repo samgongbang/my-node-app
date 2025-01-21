@@ -29,7 +29,7 @@ app.get('/api/lotto/:round', apiLimiter, async (req, res) => {
   // 캐시 확인
   if (cache.has(round)) {
     console.log(`Cache hit for round ${round}`);
-    return res.json({ data: cache.get(round), cached: true });
+    return res.json(cache.get(round));
   }
 
   // 캐시에 없으면 API 호출
@@ -44,7 +44,7 @@ app.get('/api/lotto/:round', apiLimiter, async (req, res) => {
     cache.set(round, data);
 
     console.log(`Initial data fetched and cached for round ${round}`);
-    return res.json({ data, cached: false });
+    return res.json(data);
   } catch (error) {
     console.error('Error fetching lotto data:', error.message);
     return res.status(500).json({ error: 'Failed to fetch lotto data' });
