@@ -18,7 +18,7 @@ app.use(express.json());
 // 요청 제한 설정 (분당 10회)
 const apiLimiter = rateLimit({
   windowMs: 60 * 1000, // 1분
-  max: 10, // 분당 최대 10회 요청 허용
+  max: 50, // 분당 최대 10회 요청 허용
   message: 'Too many requests. Please try again later.',
 });
 
