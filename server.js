@@ -79,7 +79,7 @@ const getLatestRound = () => {
   return diffWeeks + 1;
 };
 
-// 스케줄러 설정 (매주 토요일 20:45~21:05, 1분 간격 실행)
+// 스케줄러 설정 (매주 토요일 20:45~21:05, 30초 간격 실행)
 const scheduleDataUpdate = () => {
   const now = new Date();
   
@@ -98,7 +98,7 @@ const scheduleDataUpdate = () => {
     console.log('Lotto data update scheduler started.');
     const round = getLatestRound();
 
-    // 1분마다 실행 (8:45 ~ 9:05)
+    // 30초마다 실행 (8:45 ~ 9:05)
     const interval = setInterval(() => {
       const currentTime = new Date();
       if (currentTime.getHours() === 21 && currentTime.getMinutes() >= 5) {
@@ -109,3 +109,24 @@ const scheduleDataUpdate = () => {
       console.log(`Fetching lotto data for round ${round} at ${currentTime}`);
       fetchAndUpdateLottoData(round);
     }, 30 * 1000);
+
+    // 다음 주 스케줄 설정
+    scheduleDataUpdate();
+  }, millisUntilStart);
+};
+
+// 서버 시작 시 초기 데이터 불러오기
+const initializeData = async () => {
+  const round = getLatestRound();
+  console.log(`Initializing data for round ${round}`);
+  await fetchAndUpdateLottoData(round);
+};
+
+// 서버 시작 시 초기화 및 스케줄링 실행
+initializeData();
+scheduleDataUpdate();
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
